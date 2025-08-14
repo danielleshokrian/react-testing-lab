@@ -1,48 +1,65 @@
-import React, {useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import TransactionsList from "./TransactionsList";
 import Search from "./Search";
 import AddTransactionForm from "./AddTransactionForm";
 import Sort from "./Sort";
 
 function AccountContainer() {
-  const [transactions,setTransactions] = useState([])
-  const [search,setSearch] = useState("")
-  // console.log(search)
+  const [transactions, setTransactions] = useState([]);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState(""); // keeps track of the current sort option
 
-  useEffect(()=>{
+  useEffect(() => {
     fetch("http://localhost:6001/transactions")
-    .then(r=>r.json())
-    .then(data=>setTransactions(data))
-  },[])
+      .then((r) => r.json())
+      .then((data) => setTransactions(data))
+      .catch(console.error);
+  }, []);
 
-  function postTransaction(newTransaction){
-    fetch('http://localhost:6001/transactions',{
+  function postTransaction(newTransaction) {
+    fetch("http://localhost:6001/transactions", {
       method: "POST",
-      headers:{
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(newTransaction)
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newTransaction),
     })
-    .then(r=>r.json())
-    .then(data=>setTransactions([...transactions,data]))
-  }
-  
-  // Sort function here
-  function onSort(sortBy){
-    
+      .then((r) => r.json())
+      .then((data) => setTransactions([...transactions, data]));
   }
 
-  // Filter using search here and pass new variable down
-  
+  // Handle sorting
+  function onSort(option) {
+    setSortBy(option);
+  }
+
+  // Filter transactions by search 
+  let filteredTransactions = transactions.filter((t) =>
+    t.description?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Apply sorting 
+  if (sortBy === "amount") {
+    filteredTransactions = [...filteredTransactions].sort(
+      (a, b) => a.amount - b.amount
+    );
+  } else if (sortBy === "date") {
+    filteredTransactions = [...filteredTransactions].sort(
+      (a, b) => new Date(a.date) - new Date(b.date)
+    );
+  } else if (sortBy === "category") {
+    filteredTransactions = [...filteredTransactions].sort((a, b) =>
+      a.category.localeCompare(b.category)
+    );
+  }
 
   return (
     <div>
-      <Search setSearch={setSearch}/>
-      <AddTransactionForm postTransaction={postTransaction}/>
-      <Sort onSort={onSort}/>
-      <TransactionsList transactions={transactions} />
+      <Search search={search} setSearch={setSearch} />
+      <AddTransactionForm postTransaction={postTransaction} />
+      <Sort onSort={onSort} />
+      <TransactionsList transactions={filteredTransactions} />
     </div>
   );
 }
 
 export default AccountContainer;
+
